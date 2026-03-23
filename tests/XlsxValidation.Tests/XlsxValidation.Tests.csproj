@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\XlsxValidation\XlsxValidation\XlsxValidation.csproj" />
+    <ProjectReference Include="..\..\src\XlsxValidation\XlsxValidation.csproj" />
   </ItemGroup>
 
 </Project>
