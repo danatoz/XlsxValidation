@@ -164,7 +164,8 @@ services.AddCustomRule("is-inn", (config, prefix) => cell =>
 ```
 xlsxvalidator/
 ├── src/
-│   ├── XlsxValidation/           # Основная библиотека
+│   └── XlsxValidation/           # Основная библиотека
+├── tests/
 │   └── XlsxValidation.Tests/     # Тесты
 ├── xlsx-profiles/                # YAML-профили валидации
 │   ├── _shared.yaml              # Общие наборы правил
