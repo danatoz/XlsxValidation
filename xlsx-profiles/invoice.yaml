@@ -1,0 +1,126 @@
+# invoice.yaml
+# Профиль валидации для входящего счёта от поставщика
+
+profile: invoice
+description: "Входящий счёт от поставщика"
+version: "1.0"
+
+# Служебный блок для YAML-якорей (игнорируется при десериализации)
+_rules:
+  required_string: &required_string
+    - rule: not-empty
+    - rule: max-length
+      params: { max: 500 }
+
+validation:
+  worksheets:
+    - name: "Данные"
+
+      cells:
+        # Название организации
+        - name: "Организация"
+          anchor:
+            type: content
+            value: "Наименование организации"
+          rules:
+            - rule: not-empty
+            - rule: max-length
+              params: { max: 200 }
+
+        # ИНН организации
+        - name: "ИНН"
+          anchor:
+            type: content
+            value: "ИНН"
+          rules:
+            - rule: not-empty
+            - rule: matches
+              params:
+                pattern: '^\d{10}$|^\d{12}$'
+                message: "ИНН должен содержать 10 или 12 цифр"
+
+        # Дата составления документа
+        - name: "Дата документа"
+          anchor:
+            type: offset
+            base:
+              type: content
+              value: "Дата составления"
+            rowOffset: 0
+            colOffset: 1
+          rules:
+            - rule: not-empty
+            - rule: is-date
+            - rule: date-not-future
+
+        # Номер документа
+        - name: "Номер документа"
+          anchor:
+            type: offset
+            base:
+              type: content
+              value: "Номер"
+            rowOffset: 0
+            colOffset: 1
+          rules:
+            - rule: not-empty
+            - rule: max-length
+              params: { max: 50 }
+
+        # Итого к оплате
+        - name: "Итого к оплате"
+          anchor:
+            type: content
+            value: "Итого"
+          rules:
+            - rule: not-empty
+            - rule: is-numeric
+            - rule: min-value
+              params: { min: 0 }
+
+      tables:
+        # Таблица позиций счёта
+        - name: "Позиции"
+          headerAnchor:
+            type: content
+            value: "№"
+          stopCondition:
+            type: empty-row
+          maxRows: 5000
+          columns:
+            - header: "Наименование"
+              rules: *required_string
+
+            - header: "Количество"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "Цена"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "Сумма"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "Код"
+              rules:
+                - rule: matches
+                  params:
+                    pattern: '^\d{6}$'
+                    message: "Код должен состоять из 6 цифр"
+
+            - header: "Ед. изм."
+              rules:
+                - rule: one-of
+                  params:
+                    values: ["шт", "кг", "л", "м", "уп", "коробка"]

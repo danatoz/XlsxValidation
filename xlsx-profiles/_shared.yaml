@@ -1,0 +1,55 @@
+# _shared.yaml
+# Служебный файл с переиспользуемыми наборами правил (YAML anchors)
+# Файлы с префиксом _ не создают профилей валидации
+
+_rules:
+  # Обязательное строковое значение
+  required_string: &required_string
+    - rule: not-empty
+    - rule: is-text
+    - rule: max-length
+      params:
+        max: 500
+
+  # Обязательное числовое значение
+  required_numeric: &required_numeric
+    - rule: not-empty
+    - rule: is-numeric
+
+  # Положительное число
+  positive_number: &positive_number
+    - rule: not-empty
+    - rule: is-numeric
+    - rule: min-value
+      params:
+        min: 0
+
+  # Код из 6 цифр
+  six_digit_code: &six_digit_code
+    - rule: not-empty
+    - rule: matches
+      params:
+        pattern: '^\d{6}$'
+        message: 'Код должен состоять из 6 цифр'
+
+  # Дата в прошлом или сегодня
+  date_not_future: &date_not_future
+    - rule: not-empty
+    - rule: is-date
+    - rule: date-not-future
+
+  # ИНН (10 или 12 цифр)
+  inn_code: &inn_code
+    - rule: not-empty
+    - rule: matches
+      params:
+        pattern: '^\d{10}$|^\d{12}$'
+        message: 'ИНН должен содержать 10 или 12 цифр'
+
+  # КПП (9 цифр)
+  kpp_code: &kpp_code
+    - rule: not-empty
+    - rule: matches
+      params:
+        pattern: '^\d{9}$'
+        message: 'КПП должен содержать 9 цифр'

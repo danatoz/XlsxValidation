@@ -1,0 +1,96 @@
+# salary-report.yaml
+# Профиль валидации для отчёта по зарплате сотрудников
+
+profile: salary-report
+description: "Отчёт по зарплате сотрудников"
+version: "1.0"
+
+validation:
+  worksheets:
+    - name: "Сотрудники"
+
+      cells:
+        # Период отчёта
+        - name: "Период отчёта"
+          anchor:
+            type: content
+            value: "Период"
+          rules:
+            - rule: not-empty
+            - rule: matches
+              params:
+                pattern: '^\d{2}\.\d{2}\.\d{4}$'
+                message: "Период должен быть в формате ДД.ММ.ГГГГ"
+
+        # Дата формирования
+        - name: "Дата формирования"
+          anchor:
+            type: content
+            value: "Дата формирования"
+          rules:
+            - rule: not-empty
+            - rule: is-date
+            - rule: date-not-future
+
+      tables:
+        # Таблица сотрудников
+        - name: "Сотрудники"
+          headerAnchor:
+            type: content
+            value: "Табельный номер"
+          stopCondition:
+            type: empty-row
+          maxRows: 10000
+          columns:
+            - header: "Табельный номер"
+              rules:
+                - rule: not-empty
+                - rule: matches
+                  params:
+                    pattern: '^\d{1,6}$'
+                    message: "Табельный номер должен содержать от 1 до 6 цифр"
+
+            - header: "ФИО"
+              rules:
+                - rule: not-empty
+                - rule: max-length
+                  params: { max: 200 }
+
+            - header: "Должность"
+              rules:
+                - rule: not-empty
+                - rule: max-length
+                  params: { max: 100 }
+
+            - header: "Подразделение"
+              rules:
+                - rule: not-empty
+                - rule: max-length
+                  params: { max: 150 }
+
+            - header: "Оклад"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "Премия"
+              rules:
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "НДФЛ"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "К выплате"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }

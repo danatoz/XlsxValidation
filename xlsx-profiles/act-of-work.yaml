@@ -1,0 +1,147 @@
+# act-of-work.yaml
+# Профиль валидации для акта выполненных работ
+
+profile: act-of-work
+description: "Акт выполненных работ/услуг"
+version: "1.0"
+
+validation:
+  worksheets:
+    - name: "Акт"
+
+      cells:
+        # Номер акта
+        - name: "Номер акта"
+          anchor:
+            type: content
+            value: "№"
+          rules:
+            - rule: not-empty
+            - rule: max-length
+              params: { max: 30 }
+
+        # Дата акта
+        - name: "Дата акта"
+          anchor:
+            type: offset
+            base:
+              type: content
+              value: "№"
+            rowOffset: 0
+            colOffset: 1
+          rules:
+            - rule: not-empty
+            - rule: is-date
+            - rule: date-not-future
+
+        # Исполнитель
+        - name: "Исполнитель"
+          anchor:
+            type: content
+            value: "Исполнитель"
+          rules:
+            - rule: not-empty
+            - rule: max-length
+              params: { max: 300 }
+
+        # Заказчик
+        - name: "Заказчик"
+          anchor:
+            type: content
+            value: "Заказчик"
+          rules:
+            - rule: not-empty
+            - rule: max-length
+              params: { max: 300 }
+
+        # Период выполнения
+        - name: "Период выполнения"
+          anchor:
+            type: content
+            value: "Период выполнения работ"
+          rules:
+            - rule: not-empty
+            - rule: max-length
+              params: { max: 100 }
+
+        # Итого без НДС
+        - name: "Итого без НДС"
+          anchor:
+            type: content
+            value: "Итого без НДС"
+          rules:
+            - rule: not-empty
+            - rule: is-numeric
+            - rule: min-value
+              params: { min: 0 }
+
+        # НДС
+        - name: "НДС"
+          anchor:
+            type: content
+            value: "НДС"
+          rules:
+            - rule: is-numeric
+            - rule: min-value
+              params: { min: 0 }
+
+        # Итого с НДС
+        - name: "Итого с НДС"
+          anchor:
+            type: content
+            value: "Итого с НДС"
+          rules:
+            - rule: not-empty
+            - rule: is-numeric
+            - rule: min-value
+              params: { min: 0 }
+
+      tables:
+        # Таблица работ/услуг
+        - name: "Работы"
+          headerAnchor:
+            type: content
+            value: "№ п/п"
+          stopCondition:
+            type: empty-row
+          maxRows: 1000
+          columns:
+            - header: "№ п/п"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 1 }
+
+            - header: "Наименование работ (услуг)"
+              rules:
+                - rule: not-empty
+                - rule: max-length
+                  params: { max: 500 }
+
+            - header: "Ед. изм."
+              rules:
+                - rule: not-empty
+                - rule: max-length
+                  params: { max: 20 }
+
+            - header: "Количество"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "Цена за ед."
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
+
+            - header: "Сумма"
+              rules:
+                - rule: not-empty
+                - rule: is-numeric
+                - rule: min-value
+                  params: { min: 0 }
