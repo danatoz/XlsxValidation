@@ -1,17 +1,17 @@
 # XlsxValidation
 
-Библиотека для валидации XLSX-файлов с конфигурацией через YAML.
+Library for validating XLSX files with YAML-based configuration.
 
-## Возможности
+## Features
 
-- **Декларативная конфигурация** — все правила валидации описываются в YAML-файлах
-- **Система якорей** — адресация ячеек через содержимое, смещение, именованные диапазоны или явный адрес
-- **Валидация ячеек и таблиц** — поддержка одиночных ячеек и динамических таблиц
-- **Встроенные правила** — 13 готовых правил валидации
-- **Кастомные правила** — возможность регистрации собственных правил
-- **DI-интеграция** — поддержка Microsoft.Extensions.DependencyInjection
+- **Declarative configuration** — all validation rules are defined in YAML files
+- **Anchor system** — cell addressing via content, offset, named ranges, or explicit address
+- **Cell and table validation** — support for single cells and dynamic tables
+- **Built-in rules** — 13 ready-to-use validation rules
+- **Custom rules** — ability to register your own validation rules
+- **DI integration** — Microsoft.Extensions.DependencyInjection support
 
-## Установка
+## Installation
 
 ```bash
 dotnet add package ClosedXML
@@ -19,37 +19,37 @@ dotnet add package YamlDotNet
 dotnet add package Microsoft.Extensions.DependencyInjection.Abstractions
 ```
 
-## Быстрый старт
+## Quick Start
 
-### 1. Создайте профиль валидации
+### 1. Create a validation profile
 
-Создайте файл `xlsx-profiles/invoice.yaml`:
+Create a file `xlsx-profiles/invoice.yaml`:
 
 ```yaml
 profile: invoice
-description: "Входящий счёт от поставщика"
+description: "Incoming invoice from supplier"
 version: "1.0"
 
 validation:
   worksheets:
-    - name: "Данные"
+    - name: "Data"
 
       cells:
-        - name: "Организация"
+        - name: "Organization"
           anchor:
             type: content
-            value: "Наименование организации"
+            value: "Organization Name"
           rules:
             - rule: not-empty
             - rule: max-length
               params: { max: 200 }
 
-        - name: "Дата документа"
+        - name: "Document Date"
           anchor:
             type: offset
             base:
               type: content
-              value: "Дата составления"
+              value: "Date of Preparation"
             rowOffset: 0
             colOffset: 1
           rules:
@@ -58,19 +58,19 @@ validation:
             - rule: date-not-future
 
       tables:
-        - name: "Позиции"
+        - name: "Items"
           headerAnchor:
             type: content
-            value: "№"
+            value: "No."
           stopCondition:
             type: empty-row
           maxRows: 5000
           columns:
-            - header: "Наименование"
+            - header: "Name"
               rules:
                 - rule: not-empty
 
-            - header: "Количество"
+            - header: "Quantity"
               rules:
                 - rule: not-empty
                 - rule: is-numeric
@@ -78,14 +78,14 @@ validation:
                   params: { min: 0 }
 ```
 
-### 2. Используйте в коде
+### 2. Use in code
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
 using XlsxValidation.DependencyInjection;
 using XlsxValidation.Factory;
 
-// Регистрация сервисов
+// Register services
 var services = new ServiceCollection();
 services.AddXlsxValidation(options =>
 {
@@ -95,7 +95,7 @@ services.AddXlsxValidation(options =>
 var serviceProvider = services.BuildServiceProvider();
 var validatorFactory = serviceProvider.GetRequiredService<XlsxValidatorFactory>();
 
-// Валидация файла
+// Validate file
 var validator = validatorFactory.CreateForProfile("invoice");
 var report = validator.Validate("path/to/file.xlsx");
 
@@ -103,91 +103,91 @@ if (!report.IsValid)
 {
     foreach (var error in report.Errors)
     {
-        Console.WriteLine($"Ошибка: {error.FieldName} ({error.CellAddress}) - {error.Message}");
+        Console.WriteLine($"Error: {error.FieldName} ({error.CellAddress}) - {error.Message}");
     }
 }
 ```
 
-## Система якорей
+## Anchor System
 
-Якоря позволяют находить ячейки без привязки к конкретным адресам:
+Anchors allow finding cells without binding to specific addresses:
 
-| Тип | Описание | Пример |
-|-----|----------|--------|
-| `content` | Поиск по содержимому | `type: content, value: "Итого"` |
-| `offset` | Смещение от другого якоря | `type: offset, base: {...}, rowOffset: 1, colOffset: 0` |
-| `named-range` | Именованный диапазон XLSX | `type: named-range, value: "HeaderCell"` |
-| `address` | Явный адрес | `type: address, value: "B3"` |
+| Type | Description | Example |
+|------|-------------|---------|
+| `content` | Search by content | `type: content, value: "Total"` |
+| `offset` | Offset from another anchor | `type: offset, base: {...}, rowOffset: 1, colOffset: 0` |
+| `named-range` | XLSX named range | `type: named-range, value: "HeaderCell"` |
+| `address` | Explicit address | `type: address, value: "B3"` |
 
-## Встроенные правила
+## Built-in Rules
 
-### Для ячеек и колонок
+### For cells and columns
 
-| Правило | Параметры | Описание |
-|---------|-----------|----------|
-| `not-empty` | — | Ячейка не должна быть пустой |
-| `is-numeric` | — | Значение является числом |
-| `is-date` | — | Значение является датой |
-| `is-text` | — | Значение является строкой |
-| `max-length` | `max: int` | Длина строки не превышает max |
-| `min-length` | `min: int` | Длина строки не менее min |
-| `min-value` | `min: double` | Числовое значение >= min |
-| `max-value` | `max: double` | Числовое значение <= max |
-| `matches` | `pattern: string`, `message: string` | Значение соответствует regex |
-| `one-of` | `values: [...]` | Значение входит в список допустимых |
+| Rule | Parameters | Description |
+|------|------------|-------------|
+| `not-empty` | — | Cell must not be empty |
+| `is-numeric` | — | Value is a number |
+| `is-date` | — | Value is a date |
+| `is-text` | — | Value is a string |
+| `max-length` | `max: int` | String length does not exceed max |
+| `min-length` | `min: int` | String length is at least min |
+| `min-value` | `min: double` | Numeric value >= min |
+| `max-value` | `max: double` | Numeric value <= max |
+| `matches` | `pattern: string`, `message: string` | Value matches regex pattern |
+| `one-of` | `values: [...]` | Value is in the allowed list |
 
-### Только для ячеек
+### For cells only
 
-| Правило | Описание |
-|---------|----------|
-| `date-not-future` | Дата не может быть в будущем |
-| `date-not-past` | Дата не может быть в прошлом |
-| `is-merged` | Ячейка является объединённой |
+| Rule | Description |
+|------|-------------|
+| `date-not-future` | Date cannot be in the future |
+| `date-not-past` | Date cannot be in the past |
+| `is-merged` | Cell is merged |
 
-## Кастомные правила
+## Custom Rules
 
 ```csharp
 services.AddCustomRule("is-inn", (config, prefix) => cell =>
 {
     var value = cell.GetString().Trim();
-    var isValid = (value.Length == 10 || value.Length == 12) 
+    var isValid = (value.Length == 10 || value.Length == 12)
         && value.All(char.IsDigit);
-    
-    return isValid 
-        ? ValidationResult.Ok() 
-        : ValidationResult.Error($"{prefix}Некорректный ИНН");
+
+    return isValid
+        ? ValidationResult.Ok()
+        : ValidationResult.Error($"{prefix}Invalid INN");
 });
 ```
 
-## Структура проекта
+## Project Structure
 
 ```
 xlsxvalidator/
 ├── src/
-│   └── XlsxValidation/           # Основная библиотека
+│   └── XlsxValidation/           # Main library
 ├── tests/
-│   └── XlsxValidation.Tests/     # Тесты
-├── xlsx-profiles/                # YAML-профили валидации
-│   ├── _shared.yaml              # Общие наборы правил
+│   └── XlsxValidation.Tests/     # Tests
+├── xlsx-profiles/                # YAML validation profiles
+│   ├── _shared.yaml              # Common rule sets
 │   ├── invoice.yaml
 │   ├── salary-report.yaml
 │   └── act-of-work.yaml
 └── README.md
 ```
 
-## Запуск тестов
+## Running Tests
 
 ```bash
 dotnet test
 ```
 
-## Требования
+## Requirements
 
 - .NET 8.0+
 - ClosedXML 0.105.0+
 - YamlDotNet 16.3.0+
 - Microsoft.Extensions.DependencyInjection.Abstractions 10.0.0+
 
-## Лицензия
+## License
 
 MIT
