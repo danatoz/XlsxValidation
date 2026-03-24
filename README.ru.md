@@ -1,12 +1,13 @@
 # XlsxValidation
 
-Библиотека для валидации XLSX-файлов с конфигурацией через YAML.
+Библиотека для валидации и парсинга XLSX-файлов с конфигурацией через YAML.
 
 ## Возможности
 
-- **Декларативная конфигурация** — все правила валидации описываются в YAML-файлах
+- **Декларативная конфигурация** — все правила валидации и парсинга описываются в YAML-файлах
 - **Система якорей** — адресация ячеек через содержимое, смещение, именованные диапазоны или явный адрес
 - **Валидация ячеек и таблиц** — поддержка одиночных ячеек и динамических таблиц
+- **Парсинг в модели** — извлечение данных в strongly-typed модели
 - **Встроенные правила** — 13 готовых правил валидации
 - **Кастомные правила** — возможность регистрации собственных правил
 - **DI-интеграция** — поддержка Microsoft.Extensions.DependencyInjection
@@ -164,15 +165,26 @@ services.AddCustomRule("is-inn", (config, prefix) => cell =>
 ```
 xlsxvalidator/
 ├── src/
-│   └── XlsxValidation/           # Основная библиотека
+│   └── XlsxValidation/
+│       ├── Anchors/           # Система якорей
+│       ├── Builder/           # Builder для валидатора
+│       ├── Configuration/     # Конфигурация и YAML
+│       ├── DependencyInjection/
+│       ├── Factory/           # Фабрики валидаторов/парсеров
+│       ├── Parsing/           # Парсинг XLSX
+│       ├── Results/           # Результаты валидации
+│       ├── Rules/             # Правила валидации
+│       └── Validators/        # Валидаторы
 ├── tests/
-│   └── XlsxValidation.Tests/     # Тесты
-├── xlsx-profiles/                # YAML-профили валидации
-│   ├── _shared.yaml              # Общие наборы правил
+│   └── XlsxValidation.Tests/
+├── xlsx-profiles/             # YAML-профили валидации
+│   ├── _shared.yaml
 │   ├── invoice.yaml
 │   ├── salary-report.yaml
 │   └── act-of-work.yaml
-└── README.md
+└── docs/                      # Документация
+    ├── adr/                   # Architecture Decision Records
+    └── architecture/          # Архитектурные диаграммы
 ```
 
 ## Запуск тестов
@@ -180,6 +192,154 @@ xlsxvalidator/
 ```bash
 dotnet test
 ```
+
+## Парсинг XLSX файлов
+
+Библиотека поддерживает парсинг XLSX файлов в структурированные данные с использованием той же YAML-конфигурации.
+
+### 1. Добавьте секцию parsing в профиль
+
+```yaml
+profile: invoice
+description: "Входящий счёт от поставщика"
+version: "1.0"
+
+validation:
+  # ... конфигурация валидации ...
+
+parsing:
+  # Маппинг полей на типы данных
+  fieldTypes:
+    Организация: string
+    ИНН: string
+    Дата документа: date
+    Итого к оплате: decimal
+
+  # Опции парсинга
+  options:
+    skipEmptyCells: true
+    trimStrings: true
+    culture: "ru-RU"
+    dateFormats: ["dd.MM.yyyy", "dd/MM/yyyy"]
+```
+
+### 2. Используйте парсер в коде
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using XlsxValidation.DependencyInjection;
+using XlsxValidation.Parsing;
+
+// Регистрация сервисов с включенным парсингом
+var services = new ServiceCollection();
+services.AddXlsxValidation(options =>
+{
+    options.ProfilesDirectory = "xlsx-profiles";
+    options.EnableParsing = true;  // Включить парсинг
+});
+
+var serviceProvider = services.BuildServiceProvider();
+var parserFactory = serviceProvider.GetRequiredService<XlsxParserFactory>();
+
+// Парсинг файла
+var parser = parserFactory.CreateForProfile("invoice");
+var result = parser.Parse("path/to/file.xlsx");
+
+if (result.IsSuccess)
+{
+    // Доступ к полям через extension-методы
+    var organization = result.Fields
+        .First(f => f.Name == "Организация")
+        .AsString();
+
+    var inn = result.Fields
+        .First(f => f.Name == "ИНН")
+        .AsString();
+
+    var date = result.Fields
+        .First(f => f.Name == "Дата документа")
+        .AsDateTime();
+
+    var total = result.Fields
+        .First(f => f.Name == "Итого к оплате")
+        .AsDecimal();
+
+    // Доступ к таблицам
+    var itemsTable = result.GetTable("Позиции");
+    foreach (var row in itemsTable.Rows)
+    {
+        var name = row.Fields["Наименование"].AsString();
+        var quantity = row.Fields["Количество"].AsInteger();
+        var price = row.Fields["Цена"].AsDecimal();
+    }
+}
+else
+{
+    foreach (var error in result.Errors)
+    {
+        Console.WriteLine($"Ошибка парсинга: {error.Message}");
+    }
+}
+```
+
+### 3. Маппинг на domain-модель
+
+```csharp
+using XlsxValidation.Parsing;
+
+// Определите модель с атрибутами
+public class Invoice
+{
+    [XlsxField(Name = "Организация")]
+    public string OrganizationName { get; set; }
+
+    [XlsxField(Name = "ИНН")]
+    public string INN { get; set; }
+
+    [XlsxField(Name = "Дата документа")]
+    public DateTime DocumentDate { get; set; }
+
+    [XlsxField(Name = "Итого к оплате")]
+    public decimal TotalAmount { get; set; }
+
+    [XlsxField(Name = "Позиции", Table = "Позиции")]
+    public List<InvoiceItem> Items { get; set; }
+}
+
+public class InvoiceItem
+{
+    [XlsxColumn(Header = "Наименование")]
+    public string Name { get; set; }
+
+    [XlsxColumn(Header = "Количество")]
+    public int Quantity { get; set; }
+
+    [XlsxColumn(Header = "Цена")]
+    public decimal Price { get; set; }
+
+    [XlsxColumn(Header = "Сумма")]
+    public decimal Sum { get; set; }
+}
+
+// Использование маппинга
+var invoice = result.MapTo<Invoice>();
+Console.WriteLine($"Счёт от {invoice.OrganizationName} на сумму {invoice.TotalAmount}");
+```
+
+### Методы конвертации типов
+
+| Метод | Возвращаемый тип | Описание |
+|-------|------------------|----------|
+| `AsString()` | `string?` | Получить значение как строку |
+| `AsInteger()` | `int?` | Получить значение как целое число |
+| `AsLong()` | `long?` | Получить значение как long |
+| `AsDecimal()` | `decimal?` | Получить значение как decimal |
+| `AsDouble()` | `double?` | Получить значение как double |
+| `AsDateTime()` | `DateTime?` | Получить значение как дату |
+| `AsDateOnly()` | `DateOnly?` | Получить значение как DateOnly |
+| `AsBoolean()` | `bool?` | Получить значение как булево |
+| `AsTimeSpan()` | `TimeSpan?` | Получить значение как TimeSpan |
+| `AsType<T>()` | `T?` | Получить значение как указанный тип |
 
 ## Требования
 

@@ -41,6 +41,14 @@ public class AnchorFactory
     }
 
     /// <summary>
+    /// Статический метод для создания якоря из конфигурации
+    /// </summary>
+    public static ICellAnchor CreateAnchor(AnchorConfig config)
+    {
+        return new AnchorFactory().Create(config);
+    }
+
+    /// <summary>
     /// Создать якорь из строкового представления типа
     /// </summary>
     public static AnchorType ParseAnchorType(string type)
