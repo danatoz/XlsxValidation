@@ -146,6 +146,11 @@ public record XlsxProfileConfig
     public ProfileValidationSection Validation { get; init; } = new();
 
     /// <summary>
+    /// Конфигурация парсинга
+    /// </summary>
+    public ParsingSection Parsing { get; init; } = new();
+
+    /// <summary>
     /// Служебный блок для YAML-якорей (игнорируется при десериализации)
     /// </summary>
     public Dictionary<string, object>? Rules { get; init; }

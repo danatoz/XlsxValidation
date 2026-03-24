@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.Extensions.DependencyInjection;
 using XlsxValidation.Configuration;
 using XlsxValidation.Factory;
+using XlsxValidation.Parsing;
 using XlsxValidation.Rules;
 using XlsxValidation.Results;
 
@@ -21,6 +22,11 @@ public class XlsxValidationOptions
     /// Загружать ли профили при старте
     /// </summary>
     public bool LoadProfilesAtStartup { get; set; } = true;
+
+    /// <summary>
+    /// Включить ли функциональность парсинга
+    /// </summary>
+    public bool EnableParsing { get; set; } = false;
 }
 
 /// <summary>
@@ -57,11 +63,17 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(profiles);
 
-        // Зарегистрировать фабрику
+        // Зарегистрировать фабрику валидаторов
         services.AddSingleton<XlsxValidatorFactory>();
 
         // Зарегистрировать загрузчик профилей
         services.AddSingleton<YamlProfileLoader>();
+
+        // Зарегистрировать фабрику парсеров (если включено)
+        if (options.EnableParsing)
+        {
+            services.AddSingleton<XlsxParserFactory>();
+        }
 
         return services;
     }
