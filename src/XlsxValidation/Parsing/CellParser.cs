@@ -71,6 +71,13 @@ public class CellParser
 
         try
         {
+            // Для дат и чисел используем Value, чтобы получить сырое значение
+            if (cell.DataType == XLDataType.DateTime)
+            {
+                var dateValue = cell.GetValue<DateTime>();
+                return dateValue.ToString("yyyy-MM-dd");
+            }
+
             var value = cell.GetValue<string>();
 
             if (string.IsNullOrWhiteSpace(value))
